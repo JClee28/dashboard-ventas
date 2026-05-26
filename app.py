@@ -68,73 +68,29 @@ else:
     def obtener_datos():
         if os.path.exists(ARCHIVO_HISTORICO): return pd.read_parquet(ARCHIVO_HISTORICO)
         return None
-    if menu == "📥 Importar Datos (TXT)":
+if menu == "📥 Importar Datos (TXT)":
         st.title("📥 Carga de Reportes Transaccionales")
-        st.markdown("Sube tu archivo de 120 MB aquí para procesar y actualizar el histórico permanente.")
-        archivo_subido = st.file_uploader("Selecciona el archivo TXT o TSV", type=["txt", "tsv"])
+        st.markdown("Puedes subir el archivo manualmente o sincronizar la carpeta de Google Drive de forma directa.")
         
-        if archivo_subido is not None:
-            with st.spinner("Consolidando y resguardando matriz de datos..."):
-                df_temp = pd.read_csv(archivo_subido, sep="\t", nrows=5, encoding='latin1')
-                df_temp.columns = df_temp.columns.astype(str).str.strip()
-                col_dia = "Día" if "Día" in df_temp.columns else ("Dia" if "Dia" in df_temp.columns else df_temp.columns)
-                cols_cargar = ["TIENDA", "Nombre TIENDA", "Familia", "Valor", "Costo", "Mes", "Fecha", "Semana", "SemanaMes", "Und-Mov", "Cantidad", "Documento", "Producto", "Descripcion", col_dia]
-                
-                archivo_subido.seek(0)
-                df = pd.read_csv(archivo_subido, sep="\t", engine='c', usecols=cols_cargar, encoding='latin1')
-                df.columns = df.columns.astype(str).str.strip()
-                df = df.rename(columns={col_dia: "Dia"})
-                
-                for c in ["TIENDA", "Nombre TIENDA", "Und-Mov", "Documento", "Dia", "Producto", "Descripcion"]: df[c] = df[c].astype(str).str.strip()
-                df["Familia"] = df["Familia"].astype(str).str.strip().str.upper()
-                df["Mes"] = df["Mes"].astype(str).str.strip().str.capitalize()
-                
-                df["Fecha_Str"] = df["Fecha"].astype(str)
-                df["Año"] = df["Fecha_Str"].str.extract(r'(\d{4})')
-                df["Año"] = df["Año"].fillna("Año 1").astype(str).str.strip()
-                df.drop(columns=["Fecha_Str"], inplace=True)
-
-                df["Valor"] = pd.to_numeric(df["Valor"], errors='coerce').fillna(0)
-                df["Costo"] = pd.to_numeric(df["Costo"], errors='coerce').fillna(0)
-                df["Cantidad"] = pd.to_numeric(df["Cantidad"], errors='coerce').fillna(0)
-                df["Semana"] = pd.to_numeric(df["Semana"], errors='coerce').fillna(0).astype(int)       
-                df["SemanaMes"] = pd.to_numeric(df["SemanaMes"], errors='coerce').fillna(0).astype(int)
-
-                df.to_parquet(ARCHIVO_HISTORICO, index=False)
-                st.success("¡Base de datos histórica sincronizada con éxito! Selecciona otra pestaña.")
-    elif not os.path.exists(ARCHIVO_HISTORICO):
-        st.title("📊 Dashboard Inactivo")
-        st.info("No hay datos resguardados todavía. Por favor sube tu reporte inicial en la pestaña de Carga.")
-
-    if menu == "📥 Importar Datos (TXT)":
-        st.title("📥 Carga de Reportes Transaccionales")
-        st.markdown("Puedes subir el archivo manualmente o sincronizar la carpeta de Google Drive.")
-        
-        # ID de la carpeta compartida (Reemplaza con tu ID real del Paso 2)
-        DRIVE_FOLDER_ID = "1XEv1zhCgj1iCXEQbhH5Ve2v5TG9qVf8m"
+        # ID de la carpeta compartida en tu Google Drive
+        DRIVE_FOLDER_ID = "1XEv1zhCgj1iCXEQbhH5Ve2v5TG9qVf8m" # Asegúrate de colocar tu ID real de carpeta aquí
         ARCHIVOS_CREDENCIAIS = "ventas_historico.json"
         
         # Botón Gerencial de Sincronización Automática
         if st.button("🔄 Sincronizar desde Google Drive", type="primary"):
             if not os.path.exists(ARCHIVOS_CREDENCIAIS):
-                st.error("Falta el archivo de credenciales 'ventas_historico.json' en la carpeta del proyecto.")
+                st.error("Error crítico: Falta el archivo de credenciales 'ventas_historico.json' en el servidor.")
             else:
                 with st.spinner("Conectando con Google Drive y escaneando archivos transaccionales..."):
                     try:
                         from google.oauth2 import service_account
                         import googleapiclient.discovery
                         import io
+                        import datetime
                         
-                        # 1. Definimos los alcances correctos
-                        scopes = ['https://www.googleapis.com/auth/drive']
-                        
-                        # 2. CARGA CORRECTA: Forzamos la creación del objeto con permisos explícitos para Drive
-                        creds = service_account.Credentials.from_service_account_file(
-                            ARCHIVOS_CREDENCIAIS, 
-                            scopes=scopes
-                        )
-                        
-                        # 3. Construcción del servicio de manera indestructible
+                        # Definimos los alcances e iniciamos conexión usando el archivo protegido integrado
+                        scopes = ['https://googleapis.com']
+                        creds = service_account.Credentials.from_service_account_file(ARCHIVOS_CREDENCIAIS, scopes=scopes)
                         servicio = googleapiclient.discovery.build('drive', 'v3', credentials=creds)
                         
                         # Buscar archivos TXT o TSV en la carpeta de Drive
@@ -145,7 +101,7 @@ else:
                         if not archivos:
                             st.warning("No se encontraron archivos TXT o TSV en la carpeta de Google Drive 'Bruselas_Ventas'.")
                         else:
-                            # Tomamos el archivo más reciente detectado
+                            # Seleccionamos el archivo más reciente detectado
                             archivo_target = archivos[0]
                             st.info(f"📂 Archivo detectado: {archivo_target['name']}. Procesando matriz de datos...")
                             
@@ -153,7 +109,7 @@ else:
                             request = servicio.files().get_media(fileId=archivo_target['id'])
                             file_stream = io.BytesIO(request.execute())
                             
-                            # --- PROCESAMIENTO QUIRÚRGICO DE DATOS (Igual al proceso manual) ---
+                            # --- PROCESAMIENTO QUIRÚRGICO DE DATOS ---
                             df_temp = pd.read_csv(file_stream, sep="\t", nrows=5, encoding='latin1')
                             df_temp.columns = df_temp.columns.astype(str).str.strip()
                             col_dia = "Día" if "Día" in df_temp.columns else ("Dia" if "Dia" in df_temp.columns else df_temp.columns)
@@ -180,30 +136,28 @@ else:
                             df["Semana"] = pd.to_numeric(df["Semana"], errors='coerce').fillna(0).astype(int)       
                             df["SemanaMes"] = pd.to_numeric(df["SemanaMes"], errors='coerce').fillna(0).astype(int)
 
-                            # Guardar localmente el Parquet consolidado
-                            #df.to_parquet(ARCHIVO_HISTORICO, index=False)
-                            # NUEVO: Guardamos una nota de auditoría con la fecha de la sincronización
-                            import datetime
+                            # Guardar localmente el Parquet comprimido y consolidado
+                            df.to_parquet(ARCHIVO_HISTORICO, index=False)
+                            
+                            # Registramos los datos de auditoría de sincronización con zona horaria local
                             ahora = datetime.datetime.now()
-                            # Formateamos la fecha al estilo latino: DD/MM/AAAA HH:MM
                             fecha_formateada = ahora.strftime("%d/%m/%Y %H:%M")
                             
-                            # Guardamos en la sesión para uso inmediato
                             st.session_state["ultimo_archivo"] = archivo_target['name']
                             st.session_state["ultima_fecha"] = fecha_formateada
                             
-                            # Guardamos un archivito de texto para que el servidor lo recuerde siempre
                             with open("auditoria_drive.txt", "w", encoding="utf-8") as f:
                                 f.write(f"{archivo_target['name']}|{fecha_formateada}")
                             
                             st.success("¡Base de datos sincronizada desde Google Drive con éxito! Ya puedes revisar las gráficas.")
                             st.rerun()
-                            
-                            #st.success("¡Base de datos sincronizada desde Google Drive con éxito! Ya puedes revisar las gráficas.")
-                            #st.rerun()
                     except Exception as e:
                         st.error(f"Error en la conexión o lectura de Google Drive: {str(e)}")
-
+                        
+    elif not os.path.exists(ARCHIVO_HISTORICO):
+        st.title("📊 Dashboard Inactivo")
+        st.info("No hay datos resguardados todavía. Por favor presiona el botón de sincronización de Google Drive en la pestaña de Carga.")
+        
     else:
         df = obtener_datos()
         if df is not None:
@@ -215,12 +169,8 @@ else:
             df_uni = df.groupby(["Año", "Nombre TIENDA", "Familia", "Mes", "Und-Mov"])["Cantidad"].sum().reset_index()
             df_tck = df.groupby(["Año", "Nombre TIENDA", "Familia", "Mes"])["Documento"].nunique().reset_index().rename(columns={"Documento": "Tickets"})
             df_dias = df.groupby(["Año", "Nombre TIENDA", "Familia", "Mes", "Dia"])[["Valor", "Costo"]].sum().reset_index()
-            
-            # REPARACIÓN INTEGRAL: Agregamos el parámetro 'Cantidad' para alimentar la pestaña final
-            df_prod = df.groupby(["Año", "Nombre TIENDA", "Familia", "Mes", "Producto", "Descripcion"])[["Valor", "Cantidad"]].sum().reset_index()
-
-            # --- NUEVO: LECTOR Y ALERTA VISUAL DE ÚLTIMA SINCRONIZACIÓN ---
-            # Si no está en memoria, intentamos leer el archivito de texto
+            df_prod = df.groupby(["Año", "Nombre TIENDA", "Familia", "Mes", "Producto", "Descripcion"])[["Valor", "Cantidad"]].sum().reset_index()    
+# --- LECTOR Y CINTILLO INFORMATIVO DE ÚLTIMA SINCRONIZACIÓN ---
             if "ultimo_archivo" not in st.session_state:
                 if os.path.exists("auditoria_drive.txt"):
                     with open("auditoria_drive.txt", "r", encoding="utf-8") as f:
@@ -232,7 +182,6 @@ else:
                     st.session_state["ultimo_archivo"] = "Ninguno (Carga Manual)"
                     st.session_state["ultima_fecha"] = "Desconocida"
 
-            # Desplegamos la alerta estilizada estilo cintillo gerencial
             st.markdown(f"""
                 <div style="background-color: #EAE6DF; border-left: 5px solid #2B1810; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px;">
                     <p style="margin: 0; font-size: 0.85rem; color: #2B1810; font-weight: bold; letter-spacing: 0.5px;">
@@ -258,11 +207,10 @@ else:
             if tien_sel != "Todas las Tiendas":
                 df_m_f = df_m_f[df_m_f["Nombre TIENDA"] == tien_sel]; df_s_f = df_s_f[df_s_f["Nombre TIENDA"] == tien_sel]; df_u_f = df_u_f[df_u_f["Nombre TIENDA"] == tien_sel]; df_t_f = df_t_f[df_t_f["Nombre TIENDA"] == tien_sel]; df_d_f = df_d_f[df_d_f["Nombre TIENDA"] == tien_sel]; df_p_f = df_p_f[df_p_f["Nombre TIENDA"] == tien_sel]
             if fam_sel != "Todas las Familias":
-                df_m_f = df_m_f[df_m_f["Familia"] == fam_sel]; df_s_f = df_s_f[df_s_f["Familia"] == fam_sel]; 
-                df_u_f = df_u_f[df_u_f["Familia"] == fam_sel]
-                df_t_f = df_t_f[df_t_f["Familia"] == fam_sel]; df_d_f = df_d_f[df_d_f["Familia"] == fam_sel]; df_p_f = df_p_f[df_p_f["Familia"] == fam_sel]
+                df_m_f = df_m_f[df_m_f["Familia"] == fam_sel]; df_s_f = df_s_f[df_s_f["Familia"] == fam_sel]; df_u_f = df_u_f[df_u_f["Familia"] == fam_sel]; df_t_f = df_t_f[df_t_f["Familia"] == fam_sel]; df_d_f = df_d_f[df_d_f["Familia"] == fam_sel]; df_p_f = df_p_f[df_p_f["Familia"] == fam_sel]
 
             df_m_f = df_m_f.sort_values(by="Mes_Orden")
+
             if menu == "📊 Resumen CEO (Financiero)":
                 st.title("💼 Indicadores de Rendimiento Corporativo")
                 if not df_m_f.empty:
@@ -310,46 +258,20 @@ else:
                         st.dataframe(df_u_f.groupby("Und-Mov")["Cantidad"].sum().reset_index().rename(columns={"Und-Mov":"Unidad","Cantidad":"Total"}), use_container_width=True, hide_index=True)
                 else: st.warning("No hay registros para los filtros seleccionados.")
 
-            # CORRECCIÓN DE AGREGACIÓN: Totalización absoluta por artículo de venta
             elif menu == "🕒 Por Tienda & Días":
                 st.title("🕒 Análisis Diario y de Artículos por Puntos de Venta")
-                
                 if not df_d_f.empty:
                     g_izq, g_der = st.columns(2)
-                    
                     with g_izq:
                         st.subheader("Volumen de Facturación por Día")
                         df_dias_vista = df_d_f.groupby("Dia")["Valor"].sum().reset_index()
-                        
-                        fig_bar_dias = px.bar(
-                            df_dias_vista, x="Dia", y="Valor", 
-                            color_discrete_sequence=['#2B1810'], template="plotly_white"
-                        )
+                        fig_bar_dias = px.bar(df_dias_vista, x="Dia", y="Valor", color_discrete_sequence=['#2B1810'], template="plotly_white")
                         fig_bar_dias.update_layout(xaxis_title="Día", yaxis_title="Ventas (Q)")
                         st.plotly_chart(fig_bar_dias, use_container_width=True)
-                    
                     with g_der:
                         st.subheader("Top 20 Productos Más Vendidos del Periodo Seleccionado")
-                        
-                        # Agrupación y totalización por Código y Descripción (Evita filas duplicadas)
                         df_top_prod = df_p_f.groupby(["Producto", "Descripcion"])[["Cantidad", "Valor"]].sum().reset_index()
                         df_top_prod = df_top_prod.sort_values(by="Valor", ascending=False).head(20)
-                        
-                        df_top_prod_vista = df_top_prod.rename(columns={
-                            "Producto": "Código",
-                            "Descripcion": "Descripción",
-                            "Cantidad": "Unidades",
-                            "Valor": "Ventas (Q)"
-                        })
-                        
-                        st.dataframe(
-                            df_top_prod_vista[["Código", "Descripción", "Unidades", "Ventas (Q)"]].style.format({
-                                "Unidades": "{:,.0f}", 
-                                "Ventas (Q)": "Q {:,.2f}"
-                            }), 
-                            use_container_width=True,
-                            hide_index=True
-                        )
-                else:
-                    st.warning("No hay registros diarios para los filtros seleccionados en la parte superior.")
-                    
+                        df_top_prod_vista = df_top_prod.rename(columns={"Producto": "Código", "Descripcion": "Descripción", "Cantidad": "Unidades", "Valor": "Ventas (Q)"})
+                        st.dataframe(df_top_prod_vista[["Código", "Descripción", "Unidades", "Ventas (Q)"]].style.format({"Unidades": "{:,.0f}", "Ventas (Q)": "Q {:,.2f}"}), use_container_width=True, hide_index=True)
+                else: st.warning("No hay registros diarios para los filtros seleccionados en la parte superior.")            
