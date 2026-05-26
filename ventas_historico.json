@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "loyal-karma-497517-e2",
+  "private_key_id": "4a482aadb110aea8b08e996099e44ebb27b32d28",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDZqXxWWMLHNerW\nichinSyhDS0l/x0TgliydVFZtyv0P6sA0YfiuGTtFQUvZn/w4MRmwF7KPaS4Oxij\nYV5NisLY/WmnsE4sPOgfPAMQnQLbnReya/zVFIqCedPbli+hUMisITfQ0mN6iW4o\nOmMa7HE0xnBGosv5aIf914/Mns11xKsRrG6PLQX6xwfC1a4KoLFktUpNNrPS7P4S\nukyusibS2g0ZDl5k7BoMcyNQX1IrO8Q6iF/rxy3XYneuCsF6xrRN6quIfZXpCzpy\nE6qfAMb5Oy8zC2Sg7zFxlqd7Ms+i1b8SDZUaRnyK8gNd+QNmPZlqE/OM7g0X6g8Q\nMtVKd8EbAgMBAAECggEABqcCcNUnptUEB2iQokrxeT6g2Z9xcQ4zzch+IwLRKhbk\nEBNXVtuR4hkZXniAgoksF4Pbocy+gw7zUtMAAdiy2dTs7L4btYhrA8Feypwx4Sps\n9fwM7ypAjXpRuk1dyU1hxLkDLrOvbKhUoJAgRUtirl0+Qzpoh4flWCHFeFiGKQo6\nSky2rYKMmCqG9cKkFjJ0sgcfrlXnwSORu6jThrYAcXxnArwhOo9AysWgAfspWffL\nsOYvA9wN9InBDw6l/IUipIppB9ex083QtJvsIgZxR25u34nS/43BAC56ylPU/GQA\nhaxWBx4C4pewVwcHF1szy53/uQqSvW8rpHN4FeHUcQKBgQD3aOgnqe9lJaD1RE5b\nOR0i2B1f7UeZH2bjBrBi8v0hLXaAGJCxYFwNdhcVyqCZCKnlxe6QO5cdnyXr3TLy\nbMZlJRKhCrhfYdIqhTX+PEeFkyMEzGc7Nrago4hxC8dfBPqvlFRt1kmVmRuxtPOF\nVKMtCoSFP2wl+ODiL4KXxdf0aQKBgQDhOCrINXmvT7OKNsBYdnHu2tXP3Ba2nyk0\nlFazur63PLvNhw4altdy9WVIfg4MtIIQd68qje0dkFVkeZZdihZmNNnilTHDsVFH\n2d66lD1ez5Kx4aGqMoc5hSS14n7To7yGhapdp2rx2+iarM8H7MHE1vWiUMroyCM9\nB6fdO8jI4wKBgAwXeXkuyf90hlhWXUoCEZV5YH4mt6AZM8sWsZo0bACqGyeJi9DP\nd9BEnD45Z/3yuXL8aHtuHiWZeJ39cpb8j/mzhSSPxJEM09u2JPxm78vsdAKxBr6T\nHvvc4jc8LyNKuAHKyxGPLot8LylRQbGbgFocMHverKdycXM8hTJrvfE5AoGAC4eP\nkR5Ds3jWDR5ObHjrzjl/tptiwkiVmG57ncnSl5jRWG0wiKXuM6FiZPqnB3l6KxOl\ncP1BBUFtTa53xyQZj3PnL5VJreX27kG2CEEsfx0LOnX9i7P4fjZVscX9jiIUtaJE\nHXVDoUwLtVdhZdt18/i5LG0MZixQuYAZ1NaJqdcCgYEAklAdcoJ5CT4kZFdkcreN\nhyf58GebmdXJE17vOiAkKgQhY+1aOq4ccVd7hC5We87QL/eDqHjAmAP9GMAtDgKk\npce2Sg3Z36yAiy8AzPKRx3hulCR8eTCzmjxBoFrGgViBKV9DQygiZ0H0yHPpZ/5h\n8gkYh+57WqvUyPK4TJSzvQ4=\n-----END PRIVATE KEY-----\n",
+  "client_email": "robot-bruselas@loyal-karma-497517-e2.iam.gserviceaccount.com",
+  "client_id": "102429658217448758092",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/robot-bruselas%40loyal-karma-497517-e2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
