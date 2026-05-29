@@ -3,8 +3,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit_authenticator as stauth
 import os, datetime, io, requests, re
-import tkinter as tk
-from tkinter import messagebox
+# import tkinter as tk
+# from tkinter import messagebox
 
 # Mostrar la ventana emergente
 # messagebox.showinfo(title="JCL", message="¡Hola! V1.00.")
