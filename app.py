@@ -477,7 +477,7 @@ else:
         else:
             st.warning("Por favor realice la carga de la base transaccional histórica para visualizar la matriz de utilidades.")
 
-    # ==========================================
+     # ==========================================
     # MÓDULO 5: POR TIENDA & DÍAS
     # ==========================================
     elif menu == "🕒 Por Tienda & Días":
@@ -528,37 +528,87 @@ else:
                 "Cantidad": "sum"
             }).reset_index()
             
+            # Inyección de la métrica: Ticket Promedio
+            df_dias["Ticket_Promedio"] = (df_dias["Valor"] / df_dias["Documento"]).fillna(0)
+            
             # Inyección de índice de ordenamiento contable
             df_dias["Orden_Semana"] = df_dias["Dia_Semana"].apply(lambda x: dias_orden.index(x) if x in dias_orden else 99)
             df_dias = df_dias.sort_values("Orden_Semana").reset_index(drop=True)
             df_dias = df_dias.drop(columns=["Orden_Semana"])
 
-            # --- GRÁFICO OPERATIVO EN PLOTLY ---
-            fig_dias = px.bar(
-                df_dias, 
-                x="Dia_Semana", 
-                y="Valor",
-                title="Distribución de Ventas por Día de la Semana (Q)",
-                color_discrete_sequence=[COLOR_PRIMARIO],
-                text_auto=",.2s"
+            # --- NUEVA GRÁFICA AVANZADA COMBINADA CON DOBLE EJE Y ---
+            from plotly.subplots import make_subplots
+            
+            # Crear contenedor con doble eje Y
+            fig_combinado = make_subplots(specs=[[{"secondary_y": True}]])
+            
+            # 1. Añadir Barras de Venta Acumulada (Eje Y Principal - Izquierdo)
+            fig_combinado.add_trace(
+                go.Bar(
+                    x=df_dias["Dia_Semana"],
+                    y=df_dias["Valor"],
+                    name="Venta Total (Barras)",
+                    marker_color=COLOR_PRIMARIO,
+                    text=df_dias["Valor"],
+                    texttemplate='%{y:,.2s}',
+                    textposition='inside',
+                    hovertemplate="<b>%{x}</b><br>Venta Total: Q %{y:,.2f}<extra></extra>"
+                ),
+                secondary_y=False
             )
-            fig_dias.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', 
-                plot_bgcolor='white', 
-                xaxis_title="", 
-                yaxis_title="Monto Acumulado (Q)",
-                margin=dict(l=10, r=10, t=40, b=20)
+            
+            # 2. Añadir Línea de Ticket Promedio (Eje Y Secundario - Derecho)
+            fig_combinado.add_trace(
+                go.Scatter(
+                    x=df_dias["Dia_Semana"],
+                    y=df_dias["Ticket_Promedio"],
+                    name="Ticket Promedio (Línea)",
+                    mode='lines+markers+text',
+                    line=dict(color=COLOR_ACENTO, width=4),
+                    marker=dict(size=10, color='#1A365D'),
+                    text=df_dias["Ticket_Promedio"],
+                    texttemplate='Q %{text:,.0f}',
+                    textposition='top center',
+                    hovertemplate="<b>%{x}</b><br>Ticket Promedio: Q %{y:,.2f}<extra></extra>"
+                ),
+                secondary_y=True
             )
-            st.plotly_chart(fig_dias, use_container_width=True)
+            
+            # Ajustes premium de diseño e inyección de formatos ejecutivos
+            fig_combinado.update_layout(
+                title="Distribución de Ventas y Ticket Promedio por Día de la Semana",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='white',
+                margin=dict(l=10, r=10, t=50, b=20),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                xaxis=dict(showgrid=True, gridcolor='#EAE6DF')
+            )
+            
+            # Formatear el Eje Y izquierdo (Ventas en formato compacto M / k)
+            fig_combinado.update_yaxes(
+                title_text="Monto Acumulado (Q)", 
+                showgrid=True, 
+                gridcolor='#EAE6DF', 
+                tickformat=",.2s",
+                secondary_y=False
+            )
+            
+            # Formatear el Eje Y derecho (Ticket promedio exacto)
+            fig_combinado.update_yaxes(
+                title_text="Ticket Promedio (Q)", 
+                showgrid=False, 
+                tickformat=",f",
+                secondary_y=True
+            )
+            
+            st.plotly_chart(fig_combinado, use_container_width=True)
 
             st.markdown("---")
             st.subheader("📋 Matriz de Productividad Semanal")
             
             # --- MOTOR DE EXPORTACIÓN NATIVA ULTRA COMPATIBLE (CSV UTF-8) ---
-            # Reemplaza por completo el bloque 'to_excel' problemático para evitar depender de openpyxl
             csv_data = df_dias.to_csv(index=False, sep=';', encoding='utf-8-sig')
             
-            # Botón de descarga institucional de ancho completo
             st.download_button(
                 label="📥 Exportar Matriz Operativa a Excel (CSV)",
                 data=csv_data,
@@ -568,21 +618,29 @@ else:
             )
             st.write("")
 
-            # Formateo de presentación visual para el cuadro final en la UI de la app
+            # Formateo de presentación visual para el cuadro de la interfaz del usuario
             tabla_ops = df_dias.copy()
             tabla_ops["Valor"] = tabla_ops["Valor"].map("Q {:,.2f}".format)
             tabla_ops["Documento"] = tabla_ops["Documento"].astype(int).map("{:,}".format)
+            tabla_ops["Ticket_Promedio"] = tabla_ops["Ticket_Promedio"].map("Q {:,.2f}".format)
             tabla_ops["Cantidad"] = tabla_ops["Cantidad"].astype(int).map("{:,}".format)
+            
+            # Reorganizamos las columnas para mantener la consistencia
+            tabla_ops = tabla_ops[[
+                "Dia_Semana", "Valor", "Documento", "Ticket_Promedio", "Cantidad"
+            ]]
             
             tabla_ops = tabla_ops.rename(columns={
                 "Dia_Semana": "Día de la Semana", 
                 "Valor": "Venta Total", 
                 "Documento": "Tickets Emitidos", 
+                "Ticket_Promedio": "Ticket Promedio",
                 "Cantidad": "Unidades Vendidas"
             })
             
             st.dataframe(tabla_ops, use_container_width=True)
         else:
             st.warning("No hay matriz de datos históricos activa. Cargue un archivo en la primera pestaña.")
+            
             
 
