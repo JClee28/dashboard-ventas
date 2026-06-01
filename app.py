@@ -8,19 +8,58 @@ import numpy as np
 
 st.set_page_config(page_title="ERP Gerencial", layout="wide")
 
-# Estilos corporativos de Bruselas para proteger la interfaz visual
+# Estilos corporativos de Bruselas modificados para legibilidad premium y botón inferior visible
 st.markdown("""
     <style>
     .stApp { background-color: #FAF8F5 !important; font-family: sans-serif !important; }
     section[data-testid="stSidebar"] { background-color: #2B1810 !important; min-width: 270px !important; }
     section[data-testid="stSidebar"] h2 { color: #E6C280 !important; font-family: serif !important; letter-spacing: 2px !important; text-align: center !important; }
-    div[data-testid="stRadio"] div[role="radiogroup"] label p { color: #F5F0E6 !important; font-size: 0.95rem !important; font-weight: 600 !important; }
+    
+    /* Forzar color blanco puro en textos informativos de la barra lateral */
+    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] label { color: #FFFFFF !important; }
+    
+    /* Configuración de los botones de opción (Radio) del Menú Principal */
+    div[data-testid="stRadio"] div[role="radiogroup"] label p { color: #FFFFFF !important; font-size: 0.95rem !important; font-weight: 600 !important; }
     div[data-testid="stRadio"] div[role="radiogroup"] [data-checked="true"] label p { color: #E6C280 !important; }
     div[data-testid="stRadio"] div[role="radiogroup"] label { background-color: transparent !important; border: none !important; padding: 12px 15px !important; display: flex !important; width: 100% !important; border-left: 4px solid transparent !important; }
     div[data-testid="stRadio"] div[role="radiogroup"] label:hover, div[data-testid="stRadio"] div[role="radiogroup"] [data-checked="true"] label { background-color: #3D2419 !important; border-left: 4px solid #E6C280 !important; }
+    
+    /* Diseño premium de tarjetas de KPI */
     div[data-testid="stMetric"] { background-color: #FFFFFF !important; border: 1px solid #EAE6DF !important; border-top: 4px solid #C29B68 !important; border-radius: 12px !important; padding: 20px 15px !important; }
     div[data-testid="stMetricLabel"] p { font-size: 0.75rem !important; text-transform: uppercase !important; color: #8C857B !important; font-weight: 600 !important; }
     div[data-testid="stMetricValue"] div { font-size: 1.9rem !important; font-weight: 700 !important; color: #1A365D !important; }
+    
+    /* Contenedor especial para empujar el botón de Cerrar Sesión hacia abajo */
+    .sidebar-bottom-container {
+        position: fixed;
+        bottom: 20px;
+        width: 230px;
+        background-color: #2B1810;
+        padding-top: 10px;
+        border-top: 1px solid #3D2419;
+        z-index: 999;
+    }
+    
+    /* BLINDAJE ESTRICTO DE VISIBILIDAD PARA EL BOTÓN NATIVO DE STREAMLIT AUTHENTICATOR */
+    .sidebar-bottom-container button, 
+    section[data-testid="stSidebar"] .stButton button,
+    section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"] {
+        background-color: #3D2419 !important;
+        color: #E6C280 !important;
+        border: 1px solid #E6C280 !important;
+        width: 100% !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Efecto hover al pasar el cursor sobre el botón de cerrar sesión */
+    .sidebar-bottom-container button:hover,
+    section[data-testid="stSidebar"] .stButton button:hover,
+    section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover {
+        background-color: #E6C280 !important;
+        color: #2B1810 !important;
+        border: 1px solid #E6C280 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -45,21 +84,29 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.00.')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 1.21.')
 
 else:
-    authenticator.logout('Cerrar Sesión', 'sidebar')
-    st.sidebar.markdown("<h2 style='margin-top:-30px;'>BRUSELAS 2</h2><p style='text-align:center; color:#A68565; font-size:0.75rem; letter-spacing:3px; margin-top:-10px; margin-bottom:20px;'>DASHBOARD</p>", unsafe_allow_html=True)
-    st.sidebar.markdown(f"👤 **Usuario:** {st.session_state['name']}")
+    # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
+    st.sidebar.markdown("<h2 style='margin-top:-10px;'>BRUSELAS</h2><p style='text-align:center; color:#E6C280; font-size:0.75rem; letter-spacing:3px; margin-top:-10px; margin-bottom:25px;'>DASHBOARD</p>", unsafe_allow_html=True)
     
-    # --- INYECCIÓN DE LA QUINTA OPCIÓN COMPLETA EN LA BARRA LATERAL ---
+    # 2. IDENTIFICACIÓN DE USUARIO (Letras blancas controladas por CSS superior)
+    st.sidebar.markdown(f"👤 **Usuario:** {st.session_state['name']}")
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    
+    # 3. MENÚ PRINCIPAL DEL ERP
     menu = st.sidebar.radio("MENÚ PRINCIPAL:", [
         "📥 Importar Datos (TXT)", 
         "📊 Resumen CEO & Proyecciones", 
+        "🏬 Comparativa Frente a Frente", 
         "📦 Top Margen Real (Quetzales)",
-        "🕒 Por Tienda & Días",    
-        "🏬 Comparativa Frente a Frente"
+        "🕒 Por Tienda & Días"
     ])
+    
+    # 4. BOTÓN CERRAR SESIÓN ANCLADO AL FONDO EN UN CONTENEDOR FIJO
+    st.sidebar.markdown('<div class="sidebar-bottom-container">', unsafe_allow_html=True)
+    authenticator.logout('Cerrar Sesión', 'sidebar')
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if "menu_actual" not in st.session_state: st.session_state["menu_actual"] = "📥 Importar Datos (TXT)"
     if menu != st.session_state["menu_actual"]:
@@ -106,7 +153,10 @@ else:
 
     COLOR_PRIMARIO = "#2B1810" 
     COLOR_ACENTO = "#C29B68"   
-    COLOR_FONDO = "#FAF8F5"  
+    COLOR_FONDO = "#FAF8F5"
+
+
+    # termina caja 2
 
 
     # ==========================================
