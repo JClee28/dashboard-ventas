@@ -84,7 +84,7 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 1.21.')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.01.')
 
 else:
     # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
@@ -98,12 +98,11 @@ else:
     menu = st.sidebar.radio("MENÚ PRINCIPAL:", [
         "📥 Importar Datos (TXT)", 
         "📊 Resumen CEO & Proyecciones", 
-        "🏬 Comparativa Frente a Frente", 
         "📦 Top Margen Real (Quetzales)",
-        "🕒 Por Tienda & Días"
+        "🕒 Por Tienda & Días",
+        "🏬 Comparativa Frente a Frente"     
     ])
-    
-    # 4. BOTÓN CERRAR SESIÓN ANCLADO AL FONDO EN UN CONTENEDOR FIJO
+        # 4. BOTÓN CERRAR SESIÓN ANCLADO AL FONDO EN UN CONTENEDOR FIJO
     st.sidebar.markdown('<div class="sidebar-bottom-container">', unsafe_allow_html=True)
     authenticator.logout('Cerrar Sesión', 'sidebar')
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
