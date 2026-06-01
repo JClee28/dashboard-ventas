@@ -45,20 +45,20 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 1.21.')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.00.')
 
 else:
     authenticator.logout('Cerrar Sesión', 'sidebar')
-    st.sidebar.markdown("<h2 style='margin-top:-30px;'>BRUSELAS</h2><p style='text-align:center; color:#A68565; font-size:0.75rem; letter-spacing:3px; margin-top:-10px; margin-bottom:20px;'>DASHBOARD</p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h2 style='margin-top:-30px;'>BRUSELAS 2</h2><p style='text-align:center; color:#A68565; font-size:0.75rem; letter-spacing:3px; margin-top:-10px; margin-bottom:20px;'>DASHBOARD</p>", unsafe_allow_html=True)
     st.sidebar.markdown(f"👤 **Usuario:** {st.session_state['name']}")
     
     # --- INYECCIÓN DE LA QUINTA OPCIÓN COMPLETA EN LA BARRA LATERAL ---
     menu = st.sidebar.radio("MENÚ PRINCIPAL:", [
         "📥 Importar Datos (TXT)", 
         "📊 Resumen CEO & Proyecciones", 
-        "🏬 Comparativa Frente a Frente", 
         "📦 Top Margen Real (Quetzales)",
-        "🕒 Por Tienda & Días"
+        "🕒 Por Tienda & Días",    
+        "🏬 Comparativa Frente a Frente"
     ])
     
     if "menu_actual" not in st.session_state: st.session_state["menu_actual"] = "📥 Importar Datos (TXT)"
@@ -149,7 +149,7 @@ else:
                             st.rerun()
                         else:
                             st.error("No se detectó el archivo 'c-inventfc.txt' en rutas del sistema.")
-                    except Exception as e: st.error(f"Error: {str(e)}")
+                    except Exception as e: st.error(f"Error: Drive {str(e)}")
 
     
      # ==========================================
