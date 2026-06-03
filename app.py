@@ -84,7 +84,7 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.01.')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.10.')
 
 else:
     # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
@@ -174,7 +174,8 @@ else:
                         df = pd.read_csv(arch_local, sep="\t", dtype=str, low_memory=False, on_bad_lines='skip', encoding='latin1')
                         df = normalizar_columnas_df(df)
                         df.to_parquet(ARCHIVO_HISTORICO, index=False)
-                        with open("auditoria_drive.txt", "w", encoding="utf-8") as f: f.write(f"{arch_local.name}|{datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+                        with open("auditoria_drive.txt", "w", encoding="utf-8") as f: 
+                            f.write(f"{arch_local.name}|{datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
                         st.success("¡Sincronizado localmente con éxito!")
                         st.rerun()
                     except Exception as e: st.error(f"Error local: {str(e)}")
@@ -193,15 +194,44 @@ else:
                             df = pd.read_csv(archivo_maestro_local, sep="\t", dtype=str, low_memory=False, on_bad_lines='skip', encoding='latin1')
                             df = normalizar_columnas_df(df)
                             df.to_parquet(ARCHIVO_HISTORICO, index=False)
-                            with open("auditoria_drive.txt", "w", encoding="utf-8") as f: f.write(f"c-inventfc.txt|{datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
-                            st.success("¡Sincronizado desde sistema con éxito!")
+                            
+                            with open("auditoria_drive.txt", "w", encoding="utf-8") as f: 
+                                f.write(f"c-inventfc.txt|{datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+                            
+                            st.success("¡Matriz procesada localmente con éxito!")
+                            
+                            # --- MOTOR DE AUTOMATIZACIÓN DE GITHUB EN LÍNEA ---
+                            import subprocess
+                            st.info("🚀 Iniciando despliegue automático a GitHub...")
+                            
+                            # Lista secuencial de comandos estructurados de Git
+                            comandos_git = [
+                                ["git", "add", "ventas_historico.parquet", "auditoria_drive.txt"],
+                                ["git", "commit", "-m", "Inyeccion automatica de base transaccional consolidada de 15MB"],
+                                ["git", "push", "origin", "main"]
+                            ]
+                            
+                            error_detectado = False
+                            for cmd in comandos_git:
+                                # Ejecuta en segundo plano, ocultando ventanas negras de CMD
+                                resultado = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+                                
+                                # Si un comando falla (excepto advertencias menores de Git)
+                                if resultado.returncode != 0 and "nothing to commit" not in resultado.stderr.lower():
+                                    st.error(f"Error en comando {' '.join(cmd)}: {resultado.stderr}")
+                                    error_detectado = True
+                                    break
+                            
+                            if not error_detectado:
+                                st.success("¡Repositorio de GitHub actualizado con la nueva base transaccional de 15MB!")
+                                
                             st.rerun()
                         else:
                             st.error("No se detectó el archivo 'c-inventfc.txt' en rutas del sistema.")
-                    except Exception as e: st.error(f"Error: Drive {str(e)}")
+                    except Exception as e: st.error(f"Error en la operación: {str(e)}")
 
     
-     # ==========================================
+   # ==========================================
     # MÓDULO 2: RESUMEN CEO & PROYECCIONES
     # ==========================================
     elif menu == "📊 Resumen CEO & Proyecciones":
@@ -213,20 +243,17 @@ else:
             f_col1, f_col2, f_col3 = st.columns(3)
             
             with f_col1:
-                # Filtrar valores nulos o flotantes erróneos en la columna Año
                 anios_limpios = df["Año"].dropna().astype(str).unique()
                 años_disponibles = sorted([a for a in anios_limpios if a.strip() != ""])
                 ano_sel = st.selectbox("📅 Año de Análisis", años_disponibles, index=len(años_disponibles)-1)
             
             with f_col2:
-                # Convertir a texto estricto y eliminar nulos antes de ordenar alfabéticamente
                 tiendas_limpias = df["Nombre TIENDA"].dropna().astype(str).unique()
                 tiendas_filtradas = sorted([t for t in tiendas_limpias if t.strip() != ""])
                 tiendas_disp = ["TODAS"] + tiendas_filtradas
                 tienda_sel = st.selectbox("🏬 Filtrar por Sucursal", tiendas_disp)
                 
             with f_col3:
-                # Convertir a texto estricto y eliminar nulos antes de ordenar la familia
                 familias_limpias = df["Familia"].dropna().astype(str).unique()
                 familias_filtradas = sorted([f for f in familias_limpias if f.strip() != ""])
                 familias_disp = ["TODAS"] + familias_filtradas
@@ -291,7 +318,7 @@ else:
                 eje_x_proyeccion = "2026-06-Junio"
                 nombre_prox_mes_kpi = "Junio 2026"
 
-            # Construcción de capas de graficación
+            # Construcción de capas de graficación temporal
             df_plot_historico = df_cronologico[["Eje_X_Texto", "Valor"]].copy()
             df_plot_historico["Tipo"] = "Ventas Reales Históricas"
             
@@ -303,7 +330,7 @@ else:
             df_grafico_completo = pd.concat([df_plot_historico, df_plot_proyeccion]).reset_index(drop=True)
             lista_orden_secuencial = list(df_cronologico["Eje_X_Texto"].unique()) + [eje_x_proyeccion]
 
-            # KPIs Superiores adaptados a los filtros aplicados
+            # KPIs Superiores macro del CEO
             v_totales = df_ano["Valor"].sum()
             c_totales = df_ano["Costo"].sum()
             m_total_q = v_totales - c_totales
@@ -316,22 +343,79 @@ else:
             st.markdown("---")
             st.subheader("📉 Análisis de Tendencia Histórica y Línea de Predicción Financiera")
             
+            # --- 1. GRÁFICA DE TENDENCIA PRINCIPAL (ANCHO COMPLETO) ---
             fig = px.line(
                 df_grafico_completo, x="Eje_X_Texto", y="Valor", color="Tipo",
                 category_orders={"Eje_X_Texto": lista_orden_secuencial},
                 color_discrete_sequence=[COLOR_PRIMARIO, COLOR_ACENTO], markers=True
             )
             fig.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', margin=dict(l=20, r=20, t=30, b=50),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', margin=dict(l=20, r=20, t=10, b=40),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, title=None),
                 yaxis=dict(showgrid=True, gridcolor='#EAE6DF', title="Montos de Venta (Q)", tickformat=",.2s"),
                 xaxis=dict(showgrid=True, gridcolor='#EAE6DF', tickangle=-30, title=None, type='category')
             )
             fig.for_each_trace(lambda t: t.update(line=dict(dash='dash', width=3)) if t.name == "Proyección de Tendencia" else t.update(line=dict(width=3)))
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("No hay matriz de datos históricos activa. Cargue un archivo en la primera pestaña.")
-
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+        # --- NUEVA SECCIÓN DE DISTRIBUCIÓN SECUNDARIA EN PARALELO ---
+            st.subheader("📊 Distribución Comercial del Periodo")
+            g_col1, g_col2 = st.columns(2)
+            
+            with g_col1:
+                # --- GRÁFICA 2: VENTAS POR TIENDA (Barras delgadas ordenadas) ---
+                df_tiendas = df_ano.groupby("Nombre TIENDA").agg({"Valor": "sum"}).reset_index()
+                df_tiendas = df_tiendas[df_tiendas["Nombre TIENDA"].astype(str).str.strip() != ""]
+                df_tiendas = df_tiendas.sort_values(by="Valor", ascending=False)
+                
+                fig_tiendas = px.bar(
+                    df_tiendas, x="Nombre TIENDA", y="Valor",
+                    title="Ventas por Sucursal (Mayor a Menor)",
+                    color_discrete_sequence=[COLOR_PRIMARIO],
+                    text_auto=",.2s"
+                )
+                fig_tiendas.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', bargap=0.5,
+                    margin=dict(l=10, r=10, t=40, b=80), # Aumentamos el margen inferior para las letras rotadas
+                    xaxis_title="", yaxis_title="Ventas (Q)",
+                    yaxis=dict(showgrid=True, gridcolor='#EAE6DF', tickformat=",.2s"),
+                    # --- BLINDAJE DE VISIBILIDAD PARA NOMBRES DE TIENDAS ---
+                    xaxis=dict(
+                        type='category',
+                        tickangle=-45,          # Rotación premium a 45 grados hacia la izquierda
+                        dtick=1,                # Fuerza a Plotly a pintar cada etiqueta individualmente
+                        showticklabels=True     # Prohibe el ocultamiento automático de texto
+                    )
+                )
+                st.plotly_chart(fig_tiendas, use_container_width=True)
+                
+            with g_col2:
+                # --- GRÁFICA 3: VENTAS POR FAMILIA DE PRODUCTO (Gráfica de Pie) ---
+                df_familias = df_ano.groupby("Familia").agg({"Valor": "sum"}).reset_index()
+                df_familias = df_familias[df_familias["Familia"].astype(str).str.strip() != ""]
+                
+                colores_pie = [COLOR_PRIMARIO, COLOR_ACENTO, "#3D2419", "#EAE6DF", "#8C857B", "#1A365D"]
+                
+                fig_pie = px.pie(
+                    df_familias, values="Valor", names="Familia",
+                    title="Participación de Ventas por Familia de Producto",
+                    color_discrete_sequence=colores_pie,
+                    hole=0.3
+                )
+                fig_pie.update_traces(
+                    textposition='inside', 
+                    textinfo='percent+label',
+                    hovertemplate="<b>%{label}</b><br>Venta: Q %{value:,.2f}<br>Participación: %{percent}<extra></extra>"
+                )
+                fig_pie.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(l=10, r=10, t=40, b=20),
+                    legend=dict(orientation="h", yanchor="top", y=-0.05, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)    
+        
+        else:st.warning("No hay matriz de datos históricos activa. Cargue un archivo en la primera pestaña.")    
 
 
     # ==========================================
