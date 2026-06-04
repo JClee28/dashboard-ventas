@@ -163,6 +163,26 @@ else:
     # ==========================================
     if menu == "📥 Importar Datos (TXT)":
         st.title("📥 Panel de Control de Carga Híbrido")
+        
+        # --- CINTILLO INFORMATIVO DE ÚLTIMA CARGA (AUDITORÍA DE ENTRADA) ---
+        if os.path.exists("auditoria_drive.txt"):
+            try:
+                with open("auditoria_drive.txt", "r", encoding="utf-8") as f:
+                    contenido_auditoria = f.read().strip()
+                
+                # Desestructuramos el nombre del archivo y la estampa de tiempo
+                if "|" in contenido_auditoria:
+                    nom_arch, fecha_hora_carga = contenido_auditoria.split("|")
+                    st.info(f"📋 **Estatus del ERP:** Última sincronización exitosa el **{fecha_hora_carga}** usando el origen **'{nom_arch}'**.")
+                else:
+                    st.info(f"📋 **Estatus del ERP:** Última sincronización registrada: **{contenido_auditoria}**")
+            except Exception:
+                st.warning("⚠️ No se pudo leer la bitácora de auditoría interna.")
+        else:
+            st.warning("⚠️ **Aviso Directivo:** No se registran cargas previas en este servidor. Por favor, procese la matriz de datos transaccional.")
+            
+        st.write("") # Espaciador visual ejecutivo
+        
         btn_col1, btn_col2 = st.columns(2)
         
         with btn_col1:
@@ -204,7 +224,6 @@ else:
                             import subprocess
                             st.info("🚀 Iniciando despliegue automático a GitHub...")
                             
-                            # Lista secuencial de comandos estructurados de Git
                             comandos_git = [
                                 ["git", "add", "ventas_historico.parquet", "auditoria_drive.txt"],
                                 ["git", "commit", "-m", "Inyeccion automatica de base transaccional consolidada de 15MB"],
@@ -213,10 +232,7 @@ else:
                             
                             error_detectado = False
                             for cmd in comandos_git:
-                                # Ejecuta en segundo plano, ocultando ventanas negras de CMD
                                 resultado = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-                                
-                                # Si un comando falla (excepto advertencias menores de Git)
                                 if resultado.returncode != 0 and "nothing to commit" not in resultado.stderr.lower():
                                     st.error(f"Error en comando {' '.join(cmd)}: {resultado.stderr}")
                                     error_detectado = True
