@@ -84,7 +84,7 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 2.10.')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 3.00')
 
 else:
     # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
