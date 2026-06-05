@@ -84,7 +84,7 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 3.00')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 3.10')
 
 else:
     # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
@@ -256,7 +256,7 @@ else:
         
         if df is not None:
             # --- PANEL DE FILTROS EN COLUMNAS CON EXTRACCIÓN PROTEGIDA ---
-            f_col1, f_col2, f_col3 = st.columns(3)
+            f_col1, f_col2, f_col3, f_col4 = st.columns(4)
             
             with f_col1:
                 anios_limpios = df["Año"].dropna().astype(str).unique()
@@ -264,12 +264,17 @@ else:
                 ano_sel = st.selectbox("📅 Año de Análisis", años_disponibles, index=len(años_disponibles)-1)
             
             with f_col2:
+                # NUEVO FILTRO: Afecta a los KPIs, Barras por Tienda y Pie por Familia (Menos a la gráfica de tendencia)
+                meses_disp = ["TODOS", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+                mes_sel = st.selectbox("📆 Mes para KPIs y Sectores", meses_disp, index=0)
+            
+            with f_col3:
                 tiendas_limpias = df["Nombre TIENDA"].dropna().astype(str).unique()
                 tiendas_filtradas = sorted([t for t in tiendas_limpias if t.strip() != ""])
                 tiendas_disp = ["TODAS"] + tiendas_filtradas
                 tienda_sel = st.selectbox("🏬 Filtrar por Sucursal", tiendas_disp)
                 
-            with f_col3:
+            with f_col4:
                 familias_limpias = df["Familia"].dropna().astype(str).unique()
                 familias_filtradas = sorted([f for f in familias_limpias if f.strip() != ""])
                 familias_disp = ["TODAS"] + familias_filtradas
@@ -285,14 +290,14 @@ else:
             df_time["Mes_Limpio"] = df_time["Mes"].astype(str).str.strip().str.capitalize()
             df_time["Mes_Num"] = df_time["Mes_Limpio"].map(meses_map).fillna(1).astype(int)
             
-            # --- APLICACIÓN DE FILTROS CRUZADOS EN DATA GENERAL ---
+            # --- APLICACIÓN DE FILTROS EN DATA GENERAL (Para Gráfica de Tendencia Principal) ---
             if tienda_sel != "TODAS":
                 df_time = df_time[df_time["Nombre TIENDA"].astype(str) == tienda_sel]
             if familia_sel != "TODAS":
                 df_time = df_time[df_time["Familia"].astype(str) == familia_sel]
                 
-            # Data filtrada específica para las tarjetas KPI de un año particular
-            df_ano = df_time[df_time["Año"].astype(str) == str(ano_sel)]
+            # Base de datos anual inalterada por mes para la primera gráfica de tendencia lineal
+            df_ano_tendencia = df_time[df_time["Año"].astype(str) == str(ano_sel)]
 
             # Consolidación cronológica para la tendencia
             df_cronologico = df_time.groupby(["Año", "Mes_Limpio", "Mes_Num"]).agg({"Valor": "sum"}).reset_index()
@@ -346,20 +351,29 @@ else:
             df_grafico_completo = pd.concat([df_plot_historico, df_plot_proyeccion]).reset_index(drop=True)
             lista_orden_secuencial = list(df_cronologico["Eje_X_Texto"].unique()) + [eje_x_proyeccion]
 
-            # KPIs Superiores macro del CEO
-            v_totales = df_ano["Valor"].sum()
-            c_totales = df_ano["Costo"].sum()
+            # --- LOGICA DEL FILTRO DE MES INDEPENDIENTE (Para KPIs y Gráficas de Abajo) ---
+            df_mes_especifico = df_ano_tendencia.copy()
+            if mes_sel != "TODOS":
+                df_mes_especifico = df_mes_especifico[df_mes_especifico["Mes_Limpio"] == mes_sel.capitalize()]
+
+            # KPIs Superiores macro recalculados dinámicamente según el mes seleccionado
+            v_totales = df_mes_especifico["Valor"].sum()
+            c_totales = df_mes_especifico["Costo"].sum()
             m_total_q = v_totales - c_totales
             
             m1, m2, m3 = st.columns(3)
-            m1.metric("VENTAS NETAS TOTALES", f"Q {v_totales / 1e6:,.2f}M")
-            m2.metric("MARGEN DE UTILIDAD BRUTA", f"Q {m_total_q / 1e6:,.2f}M")
+            # Si se selecciona un mes, la tarjeta cambia el nombre del título para avisarle al CEO
+            titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
+            titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
+            
+            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e5 else f"Q {v_totales:,.2f}")
+            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e5 else f"Q {m_total_q:,.2f}")
             m3.metric(f"PROYECCIÓN ALGORÍTMICA ({nombre_prox_mes_kpi.upper()})", f"Q {prediccion_proximo_mes / 1e6:,.2f}M")
             
             st.markdown("---")
             st.subheader("📉 Análisis de Tendencia Histórica y Línea de Predicción Financiera")
             
-            # --- 1. GRÁFICA DE TENDENCIA PRINCIPAL (ANCHO COMPLETO) ---
+            # --- 1. GRÁFICA DE TENDENCIA PRINCIPAL (ANCHO COMPLETO - NO AFECTADA POR EL MES) ---
             fig = px.line(
                 df_grafico_completo, x="Eje_X_Texto", y="Valor", color="Tipo",
                 category_orders={"Eje_X_Texto": lista_orden_secuencial},
@@ -375,13 +389,15 @@ else:
             st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
-        # --- NUEVA SECCIÓN DE DISTRIBUCIÓN SECUNDARIA EN PARALELO ---
-            st.subheader("📊 Distribución Comercial del Periodo")
+            
+            # --- SECCIÓN DE DISTRIBUCIÓN SECUNDARIA EN PARALELO (AFECTADAS POR EL MES) ---
+            sub_titulo_sectores = f"📊 Distribución Comercial del Periodo: {mes_sel}" if mes_sel != "TODOS" else "📊 Distribución Comercial del Periodo Completo"
+            st.subheader(sub_titulo_sectores)
             g_col1, g_col2 = st.columns(2)
             
             with g_col1:
-                # --- GRÁFICA 2: VENTAS POR TIENDA (Barras delgadas ordenadas) ---
-                df_tiendas = df_ano.groupby("Nombre TIENDA").agg({"Valor": "sum"}).reset_index()
+                # --- GRÁFICA 2: VENTAS POR TIENDA (Barras delgadas - Afectada por el Mes) ---
+                df_tiendas = df_mes_especifico.groupby("Nombre TIENDA").agg({"Valor": "sum"}).reset_index()
                 df_tiendas = df_tiendas[df_tiendas["Nombre TIENDA"].astype(str).str.strip() != ""]
                 df_tiendas = df_tiendas.sort_values(by="Valor", ascending=False)
                 
@@ -393,26 +409,15 @@ else:
                 )
                 fig_tiendas.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', bargap=0.5,
-                    margin=dict(l=10, r=10, t=40, b=80), # Aumentamos el margen inferior para las letras rotadas
-                    xaxis_title="", yaxis_title="Ventas (Q)",
-                    yaxis=dict(showgrid=True, gridcolor='#EAE6DF', tickformat=",.2s"),
-                    # --- BLINDAJE DE VISIBILIDAD PARA NOMBRES DE TIENDAS ---
-                    xaxis=dict(
-                        type='category',
-                        tickangle=-45,          # Rotación premium a 45 grados hacia la izquierda
-                        dtick=1,                # Fuerza a Plotly a pintar cada etiqueta individualmente
-                        showticklabels=True     # Prohibe el ocultamiento automático de texto
-                    )
-                )
+                    margin=dict(l=10, r=10, t=40, b=80),
+                    xaxis_title="", yaxis_title="Ventas (Q)",yaxis=dict(showgrid=True, gridcolor='#EAE6DF', tickformat=",.2s"),xaxis=dict(type='category', tickangle=-45, dtick=1, showticklabels=True))
                 st.plotly_chart(fig_tiendas, use_container_width=True)
                 
             with g_col2:
-                # --- GRÁFICA 3: VENTAS POR FAMILIA DE PRODUCTO (Gráfica de Pie) ---
-                df_familias = df_ano.groupby("Familia").agg({"Valor": "sum"}).reset_index()
+                # --- GRÁFICA 3: VENTAS POR FAMILIA DE PRODUCTO (Pie - Afectada por el Mes) ---
+                df_familias = df_mes_especifico.groupby("Familia").agg({"Valor": "sum"}).reset_index()
                 df_familias = df_familias[df_familias["Familia"].astype(str).str.strip() != ""]
-                
                 colores_pie = [COLOR_PRIMARIO, COLOR_ACENTO, "#3D2419", "#EAE6DF", "#8C857B", "#1A365D"]
-                
                 fig_pie = px.pie(
                     df_familias, values="Valor", names="Familia",
                     title="Participación de Ventas por Familia de Producto",
@@ -420,18 +425,19 @@ else:
                     hole=0.3
                 )
                 fig_pie.update_traces(
-                    textposition='inside', 
+                    textposition='inside',
                     textinfo='percent+label',
-                    hovertemplate="<b>%{label}</b><br>Venta: Q %{value:,.2f}<br>Participación: %{percent}<extra></extra>"
+                    hovertemplate="%{label} Venta: Q %{value:,.2f} Participación: %{percent}"
                 )
                 fig_pie.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
                     margin=dict(l=10, r=10, t=40, b=20),
                     legend=dict(orientation="h", yanchor="top", y=-0.05, xanchor="center", x=0.5)
                 )
-                st.plotly_chart(fig_pie, use_container_width=True)    
-        
-        else:st.warning("No hay matriz de datos históricos activa. Cargue un archivo en la primera pestaña.")    
+                st.plotly_chart(fig_pie, use_container_width=True)
+
+        else:
+            st.warning("No hay matriz de datos históricos activa. Cargue un archivo en la primera pestaña.")            
 
 
     # ==========================================
