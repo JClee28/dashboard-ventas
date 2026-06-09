@@ -366,8 +366,8 @@ else:
             titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
             titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
             
-            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e5 else f"Q {v_totales:,.2f}")
-            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e5 else f"Q {m_total_q:,.2f}")
+            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e6 else f"Q {v_totales / 1e3:,.1f}K" if v_totales >= 1e3 else f"Q {v_totales:,.2f}")
+            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
             m3.metric(f"PROYECCIÓN ALGORÍTMICA ({nombre_prox_mes_kpi.upper()})", f"Q {prediccion_proximo_mes / 1e6:,.2f}M")
             
             st.markdown("---")
