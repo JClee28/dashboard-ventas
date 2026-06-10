@@ -84,7 +84,7 @@ if st.session_state["authentication_status"] is not True:
     if st.session_state["authentication_status"] == False:
         st.error('Usuario o contraseña incorrectos.')
     elif st.session_state["authentication_status"] == None:
-        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 3.10')
+        st.warning('Por favor, ingresa tus credenciales para acceder al sistema Bruselas v 3.20')
 
 else:
     # 1. ENCABEZADO "BRUSELAS" AL INICIO DE TODO
@@ -478,6 +478,53 @@ else:
             if familia_sel != "TODAS":
                 df_filtrado = df_filtrado[df_filtrado["Familia"].astype(str) == familia_sel]
 
+
+            # ---------------------------- BOTONES INFO
+
+
+            # --- MAPEO CRONOLÓGICO SEGURO ---
+            meses_map = {
+                "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
+                "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+            }
+            
+
+            df_time = df.copy()
+            df_time["Mes_Limpio"] = df_time["Mes"].astype(str).str.strip().str.capitalize()
+            df_time["Mes_Num"] = df_time["Mes_Limpio"].map(meses_map).fillna(1).astype(int)
+
+            # --- APLICACIÓN DE FILTROS EN DATA GENERAL (Para Gráfica de Tendencia Principal) ---
+            #if tienda_sel != "TODAS":
+            #    df_time = df_time[df_time["Nombre TIENDA"].astype(str) == tienda_sel]
+            if familia_sel != "TODAS":
+                df_time = df_time[df_time["Familia"].astype(str) == familia_sel]
+
+            # Base de datos anual inalterada por mes para la primera gráfica de tendencia lineal
+            df_ano_tendencia = df_time[df_time["Año"].astype(str) == str(ano_sel)]
+
+            # --- LOGICA DEL FILTRO DE MES INDEPENDIENTE (Para KPIs y Gráficas de Abajo) ---
+            df_mes_especifico = df_ano_tendencia.copy()
+            if mes_sel != "TODOS":
+                df_mes_especifico = df_mes_especifico[df_mes_especifico["Mes_Limpio"] == mes_sel.capitalize()]
+
+
+            # KPIs Superiores macro recalculados dinámicamente según el mes seleccionado
+            v_totales = df_mes_especifico["Valor"].sum()
+            c_totales = df_mes_especifico["Costo"].sum()
+            m_total_q = v_totales - c_totales
+            
+            m1, m2, m3 = st.columns(3)
+            # Si se selecciona un mes, la tarjeta cambia el nombre del título para avisarle al CEO
+            titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
+            titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
+            
+            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e6 else f"Q {v_totales / 1e3:,.1f}K" if v_totales >= 1e3 else f"Q {v_totales:,.2f}")
+            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
+
+
+            # ----------------------------  FIN BOTONES INFO
+
+
             st.markdown("---")
             
             # Extracción protegida de la lista de sucursales para los selectores paralelos
@@ -579,6 +626,55 @@ else:
                 familias_filtradas = sorted([f for f in familias_limpias if f.strip() != ""])
                 familias_disp = ["TODAS"] + familias_filtradas
                 familia_sel = st.selectbox("📦 Familia de Producto", familias_disp)
+
+
+            # ---------------------------- BOTONES INFO
+
+
+            # --- MAPEO CRONOLÓGICO SEGURO ---
+            meses_map = {
+                "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
+                "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+            }
+            
+
+            df_time = df.copy()
+            df_time["Mes_Limpio"] = df_time["Mes"].astype(str).str.strip().str.capitalize()
+            df_time["Mes_Num"] = df_time["Mes_Limpio"].map(meses_map).fillna(1).astype(int)
+
+            # --- APLICACIÓN DE FILTROS EN DATA GENERAL (Para Gráfica de Tendencia Principal) ---
+            if tienda_sel != "TODAS":
+                df_time = df_time[df_time["Nombre TIENDA"].astype(str) == tienda_sel]
+            if familia_sel != "TODAS":
+                df_time = df_time[df_time["Familia"].astype(str) == familia_sel]
+
+            # Base de datos anual inalterada por mes para la primera gráfica de tendencia lineal
+            df_ano_tendencia = df_time[df_time["Año"].astype(str) == str(ano_sel)]
+
+            # --- LOGICA DEL FILTRO DE MES INDEPENDIENTE (Para KPIs y Gráficas de Abajo) ---
+            df_mes_especifico = df_ano_tendencia.copy()
+            if mes_sel != "TODOS":
+                df_mes_especifico = df_mes_especifico[df_mes_especifico["Mes_Limpio"] == mes_sel.capitalize()]
+
+
+            # KPIs Superiores macro recalculados dinámicamente según el mes seleccionado
+            v_totales = df_mes_especifico["Valor"].sum()
+            c_totales = df_mes_especifico["Costo"].sum()
+            m_total_q = v_totales - c_totales
+            
+            m1, m2, m3 = st.columns(3)
+            # Si se selecciona un mes, la tarjeta cambia el nombre del título para avisarle al CEO
+            titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
+            titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
+            
+            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e6 else f"Q {v_totales / 1e3:,.1f}K" if v_totales >= 1e3 else f"Q {v_totales:,.2f}")
+            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
+
+
+            # ----------------------------  FIN BOTONES INFO
+
+
+
                 
             # --- FILTRADO CRUZADO SIMULTÁNEO DE ALTA VELOCIDAD ---
             df_margen = df.copy()
@@ -657,6 +753,55 @@ else:
                 tiendas_limpias = df["Nombre TIENDA"].dropna().astype(str).unique()
                 tiendas_disp = ["TODAS"] + sorted([t for t in tiendas_limpias if t.strip() != ""])
                 tienda_sel = st.selectbox("🏬 Seleccione Sucursal", tiendas_disp)
+
+
+            # ---------------------------- BOTONES INFO
+
+
+            # --- MAPEO CRONOLÓGICO SEGURO ---
+            meses_map = {
+                "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
+                "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+            }
+            
+
+            df_time = df.copy()
+            df_time["Mes_Limpio"] = df_time["Mes"].astype(str).str.strip().str.capitalize()
+            df_time["Mes_Num"] = df_time["Mes_Limpio"].map(meses_map).fillna(1).astype(int)
+
+            # --- APLICACIÓN DE FILTROS EN DATA GENERAL (Para Gráfica de Tendencia Principal) ---
+            if tienda_sel != "TODAS":
+                df_time = df_time[df_time["Nombre TIENDA"].astype(str) == tienda_sel]
+            #  if familia_sel != "TODAS":
+            #    df_time = df_time[df_time["Familia"].astype(str) == familia_sel]
+
+            # Base de datos anual inalterada por mes para la primera gráfica de tendencia lineal
+            df_ano_tendencia = df_time[df_time["Año"].astype(str) == str(ano_sel)]
+
+            # --- LOGICA DEL FILTRO DE MES INDEPENDIENTE (Para KPIs y Gráficas de Abajo) ---
+            df_mes_especifico = df_ano_tendencia.copy()
+            if mes_sel != "TODOS":
+                df_mes_especifico = df_mes_especifico[df_mes_especifico["Mes_Limpio"] == mes_sel.capitalize()]
+
+
+            # KPIs Superiores macro recalculados dinámicamente según el mes seleccionado
+            v_totales = df_mes_especifico["Valor"].sum()
+            c_totales = df_mes_especifico["Costo"].sum()
+            m_total_q = v_totales - c_totales
+            
+            m1, m2, m3 = st.columns(3)
+            # Si se selecciona un mes, la tarjeta cambia el nombre del título para avisarle al CEO
+            titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
+            titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
+            
+            m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e6 else f"Q {v_totales / 1e3:,.1f}K" if v_totales >= 1e3 else f"Q {v_totales:,.2f}")
+            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
+
+
+            # ----------------------------  FIN BOTONES INFO
+
+
+
 
             # --- FILTRADO CRUZADO SIMULTÁNEO ---
             df_ops = df.copy()
