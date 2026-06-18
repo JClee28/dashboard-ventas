@@ -790,14 +790,20 @@ else:
             c_totales = df_mes_especifico["Costo"].sum()
             m_total_q = v_totales - c_totales
             
-            m1, m2, m3 = st.columns(3)
+            # m1, m2, m3 = st.columns(3)
+            m1, m2 = st.columns(2)
             # Si se selecciona un mes, la tarjeta cambia el nombre del título para avisarle al CEO
             titulo_ventas = f"VENTAS NETAS ({mes_sel.upper()})" if mes_sel != "TODOS" else "VENTAS NETAS TOTALES"
             titulo_margen = f"MARGEN DE UTILIDAD ({mes_sel.upper()})" if mes_sel != "TODOS" else "MARGEN DE UTILIDAD BRUTA"
             
             m1.metric(titulo_ventas, f"Q {v_totales / 1e6:,.2f}M" if v_totales >= 1e6 else f"Q {v_totales / 1e3:,.1f}K" if v_totales >= 1e3 else f"Q {v_totales:,.2f}")
-            m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
-
+            # m2.metric(titulo_margen, f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}")
+            # m2.metric(titulo_margen , f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}" , f"% {(m_total_q / v_totales)*100:,.1f}")
+            porcentaje_val = (m_total_q / v_totales * 100) if v_totales else 0
+            m_texto = f"Q {m_total_q / 1e6:,.2f}M" if m_total_q >= 1e6 else f"Q {m_total_q / 1e3:,.1f}K" if m_total_q >= 1e3 else f"Q {m_total_q:,.2f}"
+            
+            color, flecha = ("#28a745", "↑") if porcentaje_val >= 0 else ("#dc3545", "↓")
+            m2.markdown(f"<div style='font-size: 14px; color: gray; margin-bottom: -5px;'>{titulo_margen}</div><div style='font-size: 24px; font-weight: bold;'>{m_texto} <span style='font-size: 16px; color: {color}; font-weight: normal; margin-left: 8px;'>{flecha} {abs(porcentaje_val):,.1f}%</span></div>", unsafe_allow_html=True)
 
             # ----------------------------  FIN BOTONES INFO
 
